@@ -1,0 +1,2 @@
+redis == 3.5.3
+influxdb == 5.3.1
