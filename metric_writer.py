@@ -5,6 +5,7 @@ from time import sleep
 import sys
 
 import redis
+import sentry_sdk
 from influxdb import InfluxDBClient
 
 from brainzutils.metrics import REDIS_METRICS_KEY
@@ -38,12 +39,15 @@ def process_redis_server(client, redis_server, redis_port, redis_namespace):
     try:
         client.write_points(points, protocol="line")
     except Exception as err:
-        self.log.error("Cannot write metric to influx: %s" % str(err))
+        log.error("Cannot write metric to influx: %s" % str(err))
 
 
 
 def main():
     """ Main application loop """
+
+    if hasattr(config, 'LOG_SENTRY'):  # attempt to initialize sentry_sdk only if configuration available
+        sentry_sdk.init(**config.LOG_SENTRY)
 
     log.info("metric writer starting!")
     while True:

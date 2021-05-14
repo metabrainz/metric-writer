@@ -11,7 +11,11 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/"
 
+GIT_COMMIT_SHA="$(git describe --tags --dirty --always)"
+
 TAG=${1:-beta}
 echo "building for tag $TAG"
-docker build -t metabrainz/metric-writer:"$TAG" . && \
+docker build \
+    --tag metabrainz/metric-writer:"$TAG" \
+    --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" . && \
     docker push metabrainz/metric-writer:"$TAG"
