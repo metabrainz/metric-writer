@@ -9,7 +9,7 @@
 
 set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")/../"
+cd "$(dirname "${BASH_SOURCE[0]}")/"
 
 TAG=${1:-beta}
 echo "building for tag $TAG"

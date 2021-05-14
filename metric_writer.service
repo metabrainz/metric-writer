@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec /code/metrics/metric_writer.py
+exec run-consul-template -config /etc/consul-template-config.conf
