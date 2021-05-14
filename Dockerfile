@@ -20,3 +20,6 @@ COPY requirements.txt /code/metrics/
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . /code/metrics
+
+ARG GIT_COMMIT_SHA
+ENV GIT_SHA ${GIT_COMMIT_SHA}

@@ -1,5 +1,14 @@
+import os
+
 INFLUX_SERVER = "stats.metabrainz.org"
 INFLUX_PORT = 8086
+
+# Sentry config
+LOG_SENTRY = {
+    "dsn": """{{key "docker-server-configs/MetricsWriter/config.json/sentry_dsn"}}""",
+    "environment": "production",
+    "release": os.getenv("GIT_SHA", None),
+}
 
 redis_servers = []
 
