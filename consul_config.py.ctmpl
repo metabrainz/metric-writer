@@ -5,6 +5,6 @@ redis_servers = []
 
 {{if service "listenbrainz-redis"}}
 {{with index (service "listenbrainz-redis") 0}}
-REDIS_SERVERS.append(("host": "{{.Address}}", "port": {{.Port}}, "namespace": "listenbrainz"))
+redis_servers.append(("host": "{{.Address}}", "port": {{.Port}}, "namespace": "listenbrainz"))
 {{end}}
 {{end}}

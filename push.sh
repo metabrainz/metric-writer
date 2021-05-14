@@ -13,5 +13,5 @@ cd "$(dirname "${BASH_SOURCE[0]}")/"
 
 TAG=${1:-beta}
 echo "building for tag $TAG"
-docker build -t metabrainz/metric-writer:"$TAG" . && \
-    docker push metabrainz/metric-writer:"$TAG"
+docker build -t kartik1712/metric-writer:"$TAG" . && \
+    docker push kartik1712/metric-writer:"$TAG"
