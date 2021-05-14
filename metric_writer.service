@@ -1,3 +1,4 @@
 #!/bin/bash
 
+cd /code/metrics
 exec run-consul-template -config /etc/consul-template-config.conf
