@@ -36,9 +36,11 @@ def process_redis_server(client, redis_server, redis_port, redis_namespace):
         line = str(line, "utf-8")
         points.append(line)
 
+    # TODO: Writing more than one point doesn't seem to work.
     try:
         client.write_points(points, protocol="line")
     except Exception as err:
+        print("Cannot write metric to influx: %s" % str(err))
         log.error("Cannot write metric to influx: %s" % str(err))
 
 
