@@ -11,6 +11,7 @@ COPY run-metrics-command /usr/bin
 
 COPY consul-template-config.conf /etc
 COPY metric_writer.service /etc/service/metric_writer/run
+RUN touch /etc/service/cron/down
 
 RUN mkdir -p /code/metrics
 WORKDIR /code/metrics

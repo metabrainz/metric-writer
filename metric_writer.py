@@ -6,43 +6,62 @@ import sys
 
 import redis
 import sentry_sdk
-from influxdb import InfluxDBClient
+import requests
 
 from brainzutils.metrics import REDIS_METRICS_KEY
 import config
 
-SERVCE_CHECK_INTERVAL = 60  # seconds
+SERVCE_CHECK_INTERVAL = 5  #60  # seconds
 
 
 logging.basicConfig(encoding='utf-8', level=logging.INFO)
 log = logging
 
 
-def process_redis_server(client, redis_server, redis_port, redis_namespace):
+def process_redis_server(redis_server, redis_port, redis_namespace):
     """ 
         Fetch metrics from a given redis server and send them to the provided
         influx server. If a metric cannot be submitted, log and error and discard
         the metric and carry on.
     """
 
+    log.info("check redis %s" % redis_server)
     r = redis.Redis(host=redis_server, port=redis_port)
 
-    points = []
+    lines = ""
+    count = 0
     while True:
         line = r.lpop(REDIS_METRICS_KEY)
+        log.info(line)
         if not line:
             break
 
         line = str(line, "utf-8")
-        points.append(line)
+        log.info("got data: '%s'" % str(line))
 
-    # TODO: Writing more than one point doesn't seem to work.
-    try:
-        client.write_points(points, protocol="line")
-    except Exception as err:
-        print("Cannot write metric to influx: %s" % str(err))
-        log.error("Cannot write metric to influx: %s" % str(err))
+        lines += line + "\n"
+        count += 1
 
+    if not lines:
+        return
+
+    log.info("Collected %d lines of points" % count)
+
+    for tries in range(5):
+        params = { "p" : "root", "db": "service-metrics", "u": "root" }
+        r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT), params=params, data=lines)
+        if r.status_code in (200, 204):
+            log.error("submitted data point.");
+            break
+
+        if str(r.status_code)[0] == '4':
+            log.error("Cannot write metric due to 4xx error. %s" % r.text)
+            break
+
+        log.warning("Cannot write metric due to other error Retyring. %s" % r.text)
+        sleep(3)
+    else:
+        log.error("Data points not submitted due to repeated submission problems.")
 
 
 def main():
@@ -53,21 +72,10 @@ def main():
 
     log.info("metric writer starting!")
     while True:
-
-        try:
-            client = InfluxDBClient(config.INFLUX_SERVER, config.INFLUX_PORT, 'root', 'root', "service-metrics") 
-        except Exception as err:
-            log.error("Cannot make connection to influx: %s", str(err))
-            sleep(3)
-            sys.exit(-1)
-
         for info in config.redis_servers: 
-            process_redis_server(client, info["host"], info["port"], info["namespace"])
+            process_redis_server(info["host"], info["port"], info["namespace"])
 
         sleep(SERVCE_CHECK_INTERVAL)
-
-    write_api.close()
-    client.close()
 
 
 if __name__ == "__main__":
