@@ -41,20 +41,32 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
     if not lines:
         return 0
 
-    for tries in range(5):
-        params = { "p" : "root", "db": "service-metrics", "u": "root" }
-        r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT), params=params, data=lines)
-        if r.status_code in (200, 204):
-            return count
+    params = { "p" : "root", "db": "service-metrics", "u": "root" }
+    timeout_notification = monotonic() + 3600
+    while True:
+        try:
+            r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT), params=params, data=lines)
+        except Exception as exc_error:
+            r = None
 
-        if str(r.status_code)[0] == '4':
-            log.error("Cannot write metric due to 4xx error. %s" % r.text)
-            return 0
+        if r:
+            if r.status_code in (200, 204):
+                return count
 
-        log.warning("Cannot write metric due to other error Retyring. %s" % r.text)
-        sleep(3)
-    else:
-        log.error("Data points not submitted due to repeated submission problems.")
+            if str(r.status_code)[0] == '4':
+                log.error("Cannot write metric due to 4xx error. %s" % error)
+                return 0
+
+            error = r.text
+        else:
+            error = exc_error
+
+        if monotonic() > timeout_notification:
+            timeout_notification += 3600
+            log.eror("Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
+
+        log.warning("Cannot write metric due to other error Retyring. %s" % error)
+        sleep(30)
 
     return 0
 
