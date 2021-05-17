@@ -12,7 +12,7 @@ from brainzutils.metrics import REDIS_METRICS_KEY
 import config
 
 SERVCE_CHECK_INTERVAL = 15  # seconds
-REPORT_INTERVAL = SERVCE_CHECK_INTERVAL * 40 
+REPORT_INTERVAL = SERVCE_CHECK_INTERVAL * 40
 
 
 logging.basicConfig(encoding='utf-8', level=logging.INFO)
@@ -41,11 +41,12 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
     if not lines:
         return 0
 
-    params = { "p" : "root", "db": "service-metrics", "u": "root" }
+    params = {"p": "root", "db": "service-metrics", "u": "root"}
     timeout_notification = monotonic() + 3600
     while True:
         try:
-            r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT), params=params, data=lines)
+            r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER,
+                                                      config.INFLUX_PORT), params=params, data=lines)
         except Exception as exc_error:
             r = None
 
@@ -63,9 +64,11 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
 
         if monotonic() > timeout_notification:
             timeout_notification += 3600
-            log.eror("Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
+            log.eror(
+                "Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
 
-        log.warning("Cannot write metric due to other error Retyring. %s" % error)
+        log.warning(
+            "Cannot write metric due to other error Retyring. %s" % error)
         sleep(30)
 
     return 0
@@ -74,15 +77,17 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
 def main():
     """ Main application loop """
 
-    if hasattr(config, 'LOG_SENTRY'):  # attempt to initialize sentry_sdk only if configuration available
+    # attempt to initialize sentry_sdk only if configuration available
+    if hasattr(config, 'LOG_SENTRY'):
         sentry_sdk.init(**config.LOG_SENTRY)
 
     log.info("metric writer starting!")
     count = 0
     update_time = monotonic() + REPORT_INTERVAL
     while True:
-        for info in config.redis_servers: 
-            count += process_redis_server(info["host"], info["port"], info["namespace"])
+        for info in config.redis_servers:
+            count += process_redis_server(info["host"],
+                                          info["port"], info["namespace"])
 
         sleep(SERVCE_CHECK_INTERVAL)
         if monotonic() > update_time:
