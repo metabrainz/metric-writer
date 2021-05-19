@@ -60,6 +60,9 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
 
             error = r.text
         else:
+            if not exc_error:
+                continue
+
             error = exc_error
 
         if monotonic() > timeout_notification:
