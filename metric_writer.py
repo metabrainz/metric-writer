@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import logging
+import os
+import socket
 from time import sleep, monotonic
-import sys
+from typing import Optional
 
 import redis
 import sentry_sdk
@@ -19,14 +21,19 @@ logging.basicConfig(encoding='utf-8', level=logging.INFO)
 log = logging
 
 
-def process_redis_server(redis_server, redis_port, redis_namespace):
+def process_redis_server(redis_server, redis_port, redis_namespace, client_name: Optional[str] = None):
     """ 
         Fetch metrics from a given redis server and send them to the provided
         influx server. If a metric cannot be submitted, log and error and discard
         the metric and carry on.
     """
 
-    r = redis.Redis(host=redis_server, port=redis_port)
+    if client_name is None:
+        client_name = os.getenv("CONTAINER_NAME", None)
+    if client_name is None:
+        client_name = socket.gethostname()
+
+    r = redis.Redis(host=redis_server, port=redis_port, client_name=client_name)
 
     lines = ""
     count = 0
