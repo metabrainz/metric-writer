@@ -57,14 +57,13 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
                 error = r.text
         except Exception as error:
             pass
-
+        log.warning(
+            "Cannot write metric due to other error Retyring. %s" % error)
         if monotonic() > timeout_notification:
             timeout_notification += 3600
             log.error(
                 "Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
 
-        log.warning(
-            "Cannot write metric due to other error Retyring. %s" % error)
         sleep(30)
 
 
