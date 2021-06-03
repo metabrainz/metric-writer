@@ -22,8 +22,9 @@ log = logging
 def process_redis_server(redis_server, redis_port, redis_namespace):
     """ 
         Fetch metrics from a given redis server and send them to the provided
-        influx server. If a metric cannot be submitted, log and error and discard
-        the metric and carry on.
+        influx server. If a metric cannot be submitted, log the error, sleep
+        for a few seconds and retry. The data point is never discarded. We
+        only exit on a successful or client error response.
     """
 
     r = redis.Redis(host=redis_server, port=redis_port)
@@ -47,34 +48,24 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
         try:
             r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER,
                                                       config.INFLUX_PORT), params=params, data=lines)
-        except Exception as exc_error:
-            r = None
-
-        if r:
             if r.status_code in (200, 204):
                 return count
-
-            if str(r.status_code)[0] == '4':
-                log.error("Cannot write metric due to 4xx error. %s" % error)
+            elif str(r.status_code)[0] == '4':
+                log.error("Cannot write metric due to 4xx error. %s" % r.text)
                 return 0
-
-            error = r.text
-        else:
-            if not exc_error:
-                continue
-
-            error = exc_error
+            else:
+                error = r.text
+        except Exception as error:
+            pass
 
         if monotonic() > timeout_notification:
             timeout_notification += 3600
-            log.eror(
+            log.error(
                 "Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
 
         log.warning(
             "Cannot write metric due to other error Retyring. %s" % error)
         sleep(30)
-
-    return 0
 
 
 def main():
