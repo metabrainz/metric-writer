@@ -29,15 +29,12 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
 
     r = redis.Redis(host=redis_server, port=redis_port)
 
-    lines = ""
-    count = 0
+    lines = []
     while True:
         line = r.lpop(REDIS_METRICS_KEY)
         if not line:
             break
-
-        lines += str(line, "utf-8")
-        count += 1
+        lines.append(str(line, "utf-8"))
 
     if not lines:
         return 0
@@ -46,10 +43,11 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
     timeout_notification = monotonic() + 3600
     while True:
         try:
+            data = "\n".join(lines)
             r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER,
-                                                      config.INFLUX_PORT), params=params, data=lines)
+                                                      config.INFLUX_PORT), params=params, data=data)
             if r.status_code in (200, 204):
-                return count
+                return len(lines)
             elif str(r.status_code)[0] == '4':
                 log.error("Cannot write metric due to 4xx error. %s" % r.text)
                 return 0
