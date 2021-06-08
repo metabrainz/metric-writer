@@ -2,7 +2,6 @@
 
 import logging
 from time import sleep, monotonic
-import sys
 
 import redis
 import sentry_sdk
@@ -41,26 +40,27 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
 
     params = {"p": "root", "db": "service-metrics", "u": "root"}
     timeout_notification = monotonic() + 3600
+
     while True:
         try:
             data = "\n".join(lines)
-            r = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER,
-                                                      config.INFLUX_PORT), params=params, data=data)
-            if r.status_code in (200, 204):
+            response = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT),
+                                     params=params, data=data)
+            if response.status_code in (200, 204):
                 return len(lines)
-            elif str(r.status_code)[0] == '4':
-                log.error("Cannot write metric due to 4xx error. %s" % r.text)
+            elif str(response.status_code)[0] == '4':
+                log.error("Cannot write metric due to 4xx error. %s" % response.text)
                 return 0
             else:
-                error = r.text
-        except Exception as error:
-            pass
-        log.warning(
-            "Cannot write metric due to other error Retyring. %s" % error)
+                error = response.text
+        except Exception as e:
+            error = e
+        log.warning("Cannot write metric due to other error Retyring. %s" % error)
+
         if monotonic() > timeout_notification:
             timeout_notification += 3600
-            log.error(
-                "Unable to submit metrics for quite some time. Something is surely broken! Error: %s" % error)
+            log.error("Unable to submit metrics for quite some time. Something is surely broken! "
+                      "Error: %s" % error)
 
         sleep(30)
 
