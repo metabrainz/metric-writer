@@ -44,23 +44,28 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
     while True:
         try:
             data = "\n".join(lines)
-            response = requests.post("http://%s:%d/write" % (config.INFLUX_SERVER, config.INFLUX_PORT),
-                                     params=params, data=data)
+            response = requests.post("http://%s:%d/write" %
+                                     (config.INFLUX_SERVER,
+                                      config.INFLUX_PORT),
+                                     params=params,
+                                     data=data)
             if response.status_code in (200, 204):
                 return len(lines)
             elif str(response.status_code)[0] == '4':
-                log.error("Cannot write metric due to 4xx error. %s" % response.text)
+                log.error("Cannot write metric due to 4xx error. "
+                          "%s" % response.text)
                 return 0
             else:
                 error = response.text
         except Exception as e:
             error = e
-        log.warning("Cannot write metric due to other error Retyring. %s" % error)
+        log.warning("Cannot write metric due to other error Retrying. "
+                    "%s" % error)
 
         if monotonic() > timeout_notification:
             timeout_notification += 3600
-            log.error("Unable to submit metrics for quite some time. Something is surely broken! "
-                      "Error: %s" % error)
+            log.error("Unable to submit metrics for quite some time. "
+                      "Something is surely broken! Error: %s" % error)
 
         sleep(30)
 
