@@ -14,7 +14,10 @@ SERVCE_CHECK_INTERVAL = 15  # seconds
 REPORT_INTERVAL = SERVCE_CHECK_INTERVAL * 40
 
 
-logging.basicConfig(encoding='utf-8', level=logging.INFO)
+logging.basicConfig(
+    encoding='utf-8',
+    level=logging.INFO,
+    format="%(asctime)s %(name)-20s %(levelname)-8s %(message)s")
 log = logging
 
 
