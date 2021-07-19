@@ -12,6 +12,7 @@ import config
 
 SERVCE_CHECK_INTERVAL = 15  # seconds
 REPORT_INTERVAL = SERVCE_CHECK_INTERVAL * 40
+HTTP_POST_TIMEOUT = 10  # in seconds
 
 
 logging.basicConfig(
@@ -51,7 +52,8 @@ def process_redis_server(redis_server, redis_port, redis_namespace):
                                      (config.INFLUX_SERVER,
                                       config.INFLUX_PORT),
                                      params=params,
-                                     data=data)
+                                     data=data,
+                                     timeout=HTTP_POST_TIMEOUT)
             if response.status_code in (200, 204):
                 return len(lines)
             elif str(response.status_code)[0] == '4':
